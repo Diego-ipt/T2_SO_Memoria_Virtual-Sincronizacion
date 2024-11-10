@@ -8,6 +8,8 @@
 bool alarm_triggered = false;
 pthread_mutex_t alarm_mutex = PTHREAD_MUTEX_INITIALIZER;
 int alarm_time= 0;
+//si hay errores se debe cambiar a true para el seguimiento mediante printf
+bool debug = false;
 
 int main(int argc, char *argv[]) {
     int num_productores = 0, num_consumidores = 0, tam_inicial = 0, tiempo_espera = 0;
@@ -47,13 +49,8 @@ int main(int argc, char *argv[]) {
 
     // Crear hilos de consumidores
     pthread_t hilos_consumidores[num_consumidores];
-    ConsumidorArgs *consumidor_args[num_consumidores];
     for (int i = 0; i < num_consumidores; i++) {
-        consumidor_args[i] = malloc(sizeof(ConsumidorArgs));
-        consumidor_args[i]->cola = cola;
-        consumidor_args[i]->id = i;
-        consumidor_args[i]->tiempo_espera = tiempo_espera;
-        if (pthread_create(&hilos_consumidores[i], NULL, consumidor, consumidor_args[i]) != 0) {
+        if (pthread_create(&hilos_consumidores[i], NULL, consumidor, cola) != 0) {
             perror("Error al crear hilo consumidor");
             exit(EXIT_FAILURE);
         }
@@ -64,15 +61,11 @@ int main(int argc, char *argv[]) {
         pthread_join(hilos_productores[i], NULL);
     }
 
-    // Bucle para verificar el estado de la variable program_running
-    while (alarm_triggered == false) {
-        usleep(500000); // 0.5 segundos
+    // Esperar a que los hilos de productores terminen
+    for (int i = 0; i < num_consumidores; i++) {
+        pthread_join(hilos_consumidores[i], NULL);
     }
 
-    // Esperar a que los hilos de consumidores terminen
-    for (int i = 0; i < num_consumidores; i++) {
-        free(consumidor_args[i]);
-    }
 
     // Liberar recursos
     destruirColaCircular(cola);
