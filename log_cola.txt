@@ -1,0 +1,30 @@
+[Sun Nov 10 02:27:43 2024
+] Tamaño de la cola duplicar a 10 elementos.
+[Sun Nov 10 02:27:43 2024
+] Tamaño de la cola duplicar a 20 elementos.
+[Sun Nov 10 02:27:43 2024
+] Tamaño de la cola duplicar a 40 elementos.
+[Sun Nov 10 02:28:41 2024
+] Tamaño de la cola duplicar a 10 elementos.
+[Sun Nov 10 02:28:41 2024
+] Tamaño de la cola duplicar a 20 elementos.
+[Sun Nov 10 02:28:41 2024
+] Tamaño de la cola duplicar a 40 elementos.
+[Sun Nov 10 02:32:35 2024
+] Tamaño de la cola duplicar a 10 elementos.
+[Sun Nov 10 02:32:35 2024
+] Tamaño de la cola duplicar a 20 elementos.
+[Sun Nov 10 02:32:35 2024
+] Tamaño de la cola duplicar a 40 elementos.
+[Sun Nov 10 02:34:30 2024
+] Tamaño de la cola duplicar a 10 elementos.
+[Sun Nov 10 02:34:30 2024
+] Tamaño de la cola duplicar a 20 elementos.
+[Sun Nov 10 02:34:30 2024
+] Tamaño de la cola duplicar a 40 elementos.
+[Sun Nov 10 02:36:43 2024
+] Tamaño de la cola duplicar a 10 elementos.
+[Sun Nov 10 02:36:43 2024
+] Tamaño de la cola duplicar a 20 elementos.
+[Sun Nov 10 02:36:43 2024
+] Tamaño de la cola duplicar a 40 elementos.
