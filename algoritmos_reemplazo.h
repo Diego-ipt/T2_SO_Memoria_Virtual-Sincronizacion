@@ -2,6 +2,7 @@
 #define ALGORITMOS_REEMPLAZO_H
 
 #include "PaginaVirtual.h"
+#include <stdbool.h>
 
 // Prototipos de funciones
 int reemplazo_optimo(Page* table[], int num_marcos, int referencias[], int num_referencias);
@@ -11,42 +12,55 @@ int reemplazo_lru_reloj(Page* table[], int num_marcos, int referencias[], int nu
 
 int reemplazo_optimo(Page* table[], int num_marcos, int referencias[], int num_referencias) {
     int fallos_pagina = 0;
-    int marcos[num_marcos];
-    int num_marcos_ocupados = 0;
+    Page marcos[num_marcos];
+    bool acierto = false;
+
+    for (int i = 0; i < num_marcos; i++) {
+        marcos[i].valido = false; // Inicializar los marcos con un valor que no sea una página válida
+        marcos[i].num_pagina = -1;
+        //no hay nada cargado aun
+    }
 
     for (int i = 0; i < num_referencias; i++) {
         int pagina_actual = referencias[i];
-        Page* pagina = buscar_pagina(table, pagina_actual);
+        acierto = false;
 
-        if (pagina == NULL || !pagina->valido) {
-            fallos_pagina++;
-            if (num_marcos_ocupados < num_marcos) {
-                marcos[num_marcos_ocupados++] = pagina_actual;
-            } else {
-                int farthest = i + 1;
-                int replace_index = -1;
-                for (int j = 0; j < num_marcos; j++) {
-                    int k;
-                    for (k = i + 1; k < num_referencias; k++) {
-                        if (referencias[k] == marcos[j]) {
-                            if (k > farthest) {
-                                farthest = k;
-                                replace_index = j;
-                            }
-                            break;
-                        }
-                    }
-                    if (k == num_referencias) {
-                        replace_index = j;
-                        break;
-                    }
-                }
-                if (replace_index == -1) {
-                    replace_index = 0;
-                }
-                marcos[replace_index] = pagina_actual;
+        // Verificar si la página está en los marcos
+        for (int j = 0; j < num_marcos; j++) {
+            if (marcos[j].num_pagina == pagina_actual && marcos[j].valido) {
+                acierto = true;
+                break;
             }
-            insertar_pagina(table, pagina_actual, 0, 1, 0, 0);
+        }
+
+        if (!acierto) {
+            fallos_pagina++;
+            // Buscar en la tabla hash, acceso a tabla de paginas
+            Page* pagina = buscar_pagina(table, pagina_actual);
+
+            int replace_index = -1;
+            int farthest = i + 1;
+            for (int j = 0; j < num_marcos; j++) {
+                int k;
+                for (k = i + 1; k < num_referencias; k++) {
+                    if (marcos[j].num_pagina == referencias[k]) {
+                        if (k > farthest) {
+                            farthest = k;
+                            replace_index = j;
+                        }
+                    break;
+                    }
+                }
+                if (k == num_referencias) {
+                    replace_index = j;
+                    break;
+                }
+            }
+            if (replace_index == -1) {//no hay un candidato mejor
+                replace_index = 0;
+            }
+            marcos[replace_index].num_pagina = pagina_actual;
+            marcos[replace_index].valido = true;
         }
     }
     return fallos_pagina;
@@ -54,124 +68,157 @@ int reemplazo_optimo(Page* table[], int num_marcos, int referencias[], int num_r
 
 int reemplazo_fifo(Page* table[], int num_marcos, int referencias[], int num_referencias) {
     int fallos_pagina = 0;
-    int marcos[num_marcos];
-    int front = 0, rear = 0, num_marcos_ocupados = 0;
+    Page marcos[num_marcos];
+    bool acierto = false;
+
+    int front = 0;
+
+    for (int i = 0; i < num_marcos; i++) {
+        marcos[i].valido = false; // Inicializar los marcos con un valor que no sea una página válida
+        marcos[i].num_pagina = -1;//no hay nada cargado aun
+    }
 
     for (int i = 0; i < num_referencias; i++) {
         int pagina_actual = referencias[i];
-        Page* pagina = buscar_pagina(table, pagina_actual);
+        acierto = false;
 
-        if (pagina == NULL || !pagina->valido) {
-            fallos_pagina++;
-            if (num_marcos_ocupados < num_marcos) {
-                marcos[rear] = pagina_actual;
-                rear = (rear + 1) % num_marcos;
-                num_marcos_ocupados++;
-            } else {
-                marcos[front] = pagina_actual;
-                front = (front + 1) % num_marcos;
-                rear = (rear + 1) % num_marcos;
+        // Verificar si la página está en los marcos
+        for (int j = 0; j < num_marcos; j++) {
+            if (marcos[j].num_pagina == pagina_actual && marcos[j].valido) {
+                acierto = true;
+                break;
             }
-            insertar_pagina(table, pagina_actual, 0, 1, 0, 0);
+        }
+
+        if (!acierto) {
+            fallos_pagina++;
+            // Buscar en la tabla hash, acceso a tabla de paginas
+            Page* pagina = buscar_pagina(table, pagina_actual);
+
+            marcos[front].num_pagina = pagina_actual;
+            marcos[front].valido = true;
+            front = (front + 1) % num_marcos;//se avanza con el FIFO
         }
     }
     return fallos_pagina;
 }
 
 
-//falta revisar a fondo
 int reemplazo_lru(Page* table[], int num_marcos, int referencias[], int num_referencias) {
     int fallos_pagina = 0;
-    int marcos[num_marcos];
-    int contador[num_marcos];
-    int num_marcos_ocupados = 0;
+    Page marcos[num_marcos];
+    bool acierto = false;
 
-    // Inicializar contadores
     for (int i = 0; i < num_marcos; i++) {
-        contador[i] = 0;
+        marcos[i].valido = false; // Inicializar los marcos con un valor que no sea una página válida
+        marcos[i].num_pagina = -1;//no hay nada cargado aun
     }
 
     for (int i = 0; i < num_referencias; i++) {
         int pagina_actual = referencias[i];
-        Page* pagina = buscar_pagina(table, pagina_actual);
+        acierto = false;
+        int pag_referenciada = -1;
 
-        // Incrementar contadores periódicamente
+        // Verificar si la página está en los marcos y actualizacion periodica
         for (int j = 0; j < num_marcos; j++) {
-            if (contador[j] != -1 && contador[j] != 1) { // Solo incrementar contadores válidos y no en 1
-                contador[j]++;
-            } else if (contador[j] == 1) {
-                contador[j] = 0; // Resetear contador de 1 a 0
+            if (marcos[j].num_pagina == pagina_actual && marcos[j].valido) {
+                acierto = true;
+                marcos[j].referencia = 0;//se ha referenciado recientemente
+                pag_referenciada = j;
+                break;
             }
         }
-
-        if (pagina == NULL || !pagina->valido) {
-            fallos_pagina++;
-            if (num_marcos_ocupados < num_marcos) {
-                marcos[num_marcos_ocupados] = pagina_actual;
-                contador[num_marcos_ocupados] = 0; // Se ha usado recientemente
-                num_marcos_ocupados++;
-            } else {
-                int lru_index = 0;
-                for (int j = 1; j < num_marcos; j++) {
-                    if (contador[j] > contador[lru_index]) {
-                        lru_index = j;
-                    }
-                }
-                marcos[lru_index] = pagina_actual;
-                contador[lru_index] = 0; // Se ha usado recientemente
+        /*Aproximación para LRU
+            Muchas aproximaciones, todas usan bit R
+                Mantener un contador por cada página
+                    Periódicamente para cada página
+                        • (1) If R == 0 then incrementar contador (no se ha usado)
+                        • (2) If R == 1 then contador = 0 (se ha usado)*/
+        for (int h = 0; h < num_marcos; h++) {
+            if (h != pag_referenciada) {
+                marcos[h].referencia = 1;//no se ha referenciado recientemente
             }
-            insertar_pagina(table, pagina_actual, 0, 1, 0, 0);
-        } else {
+        }
+        
+
+        if (!acierto) {
+            fallos_pagina++;
+            // Buscar en la tabla hash, acceso a tabla de paginas
+            Page* pagina = buscar_pagina(table, pagina_actual);
+            int replace_index = -1;
+
             for (int j = 0; j < num_marcos; j++) {
-                if (marcos[j] == pagina_actual) {
-                    contador[j] = 0; // Se ha usado recientemente
+                if (marcos[j].referencia == 1) {
+                    replace_index = j;
                     break;
                 }
             }
+            if (replace_index == -1) {//no hay un candidato mejor
+                replace_index = 0;
+            }
+            marcos[replace_index].num_pagina = pagina_actual;
+            marcos[replace_index].valido = true;
         }
     }
     return fallos_pagina;
 }
 
 
-//falta revisar a fondo
 int reemplazo_lru_reloj(Page* table[], int num_marcos, int referencias[], int num_referencias) {
     int fallos_pagina = 0;
-    int marcos[num_marcos];
-    int uso[num_marcos];
-    int puntero = 0;
-    int num_marcos_ocupados = 0;
+    Page marcos[num_marcos];
+    bool acierto = false;
+
+    int front = 0;
+
+    for (int i = 0; i < num_marcos; i++) {
+        marcos[i].valido = false; // Inicializar los marcos con un valor que no sea una página válida
+        marcos[i].num_pagina = -1;//no hay nada cargado aun
+    }
 
     for (int i = 0; i < num_referencias; i++) {
         int pagina_actual = referencias[i];
-        Page* pagina = buscar_pagina(table, pagina_actual);
+        acierto = false;
+        int init_front = front;
+        // Verificar si la página está en los marcos
+        for (int j = 0; j < num_marcos; j++) {
+            if (marcos[j].num_pagina == pagina_actual && marcos[j].valido) {
+                acierto = true;
+                marcos[j].referencia = 1;//se ha referenciado recientemente
+                break;
+            }
+        }
 
-        if (pagina == NULL || !pagina->valido) {
+        if (!acierto) {
             fallos_pagina++;
-            while (num_marcos_ocupados >= num_marcos && uso[puntero] == 1) {
-                uso[puntero] = 0;
-                puntero = (puntero + 1) % num_marcos;
-            }
-            if (num_marcos_ocupados < num_marcos) {
-                marcos[puntero] = pagina_actual;
-                uso[puntero] = 1;
-                num_marcos_ocupados++;
-            } else {
-                marcos[puntero] = pagina_actual;
-                uso[puntero] = 1;
-                puntero = (puntero + 1) % num_marcos;
-            }
-            insertar_pagina(table, pagina_actual, 0, 1, 0, 0);
-        } else {
-            for (int j = 0; j < num_marcos; j++) {
-                if (marcos[j] == pagina_actual) {
-                    uso[j] = 1;
+            // Buscar en la tabla hash, acceso a tabla de paginas
+            Page* pagina = buscar_pagina(table, pagina_actual);
+            int replace_index = -1;
+            /* LRU con Reloj. Página no usada recientemente o Segunda Oportunidad
+                Reemplazar una página que sea de las más viejas
+                Organizar los marcos de páginas en una cola circular FIFO y 
+                    recorrer cola buscando víctima de la siguiente manera
+                         • Si bit R = 0 página es elegida para reemplazo
+                         • Si bit R = 1 página ha sido usada, darle segunda oportunidad y poner bit 
+                           en 0 y seguir con la siguiente página*/
+            while (true) {
+                if (marcos[front].referencia == 0) {
+                    replace_index = front;
                     break;
+                } else {
+                    marcos[front].referencia = 0;
                 }
+                front = (front + 1) % num_marcos;
             }
+            if (replace_index == -1) {//no hay un candidato mejor
+                replace_index = 0;
+            }
+            marcos[replace_index].num_pagina = pagina_actual;
+            marcos[replace_index].valido = true;
         }
     }
     return fallos_pagina;
 }
+
 
 #endif

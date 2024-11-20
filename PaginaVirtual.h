@@ -13,7 +13,7 @@ typedef struct Page {
     int num_marco;          //valor
     int valido;            // Bit de válido (1: en memoria, 0: no en memoria)
     int modificado;        // Bit de modificado (1: modificado, 0: no modificado)
-    int uso_reciente;      // Bit de uso reciente o lectura (1: usado, 0: no usado)
+    int referencia;      // Bit de uso reciente o lectura (de referencia) (1: usado, 0: no usado)
     struct Page* next;
 } Page;
 
@@ -31,7 +31,7 @@ Page* crear_pagina(int num_pagina, int num_marco, int valido, int modificado, in
     new_page->num_marco = num_marco;
     new_page->valido = valido;
     new_page->modificado = modificado;
-    new_page->uso_reciente = uso_reciente;
+    new_page->referencia = uso_reciente;
     new_page->next = NULL;
     return new_page;
 }
@@ -40,6 +40,22 @@ Page* crear_pagina(int num_pagina, int num_marco, int valido, int modificado, in
 // Insertar una página en la tabla hash
 void insertar_pagina(Page* table[], int num_pagina, int num_marco, int valido, int modificado, int uso_reciente) {
     int index = hash_function(num_pagina);
+    Page* current = table[index];
+    
+    // Buscar si la página ya existe
+    while (current != NULL) {
+        if (current->num_pagina == num_pagina) {
+            // Si la página ya existe, modificar sus valores
+            current->num_marco = num_marco;
+            current->valido = valido;
+            current->modificado = modificado;
+            current->referencia = uso_reciente;
+            return;
+        }
+        current = current->next;
+    }
+    
+    // Si la página no existe, crear una nueva y agregarla a la tabla
     Page* new_page = crear_pagina(num_pagina, num_marco, valido, modificado, uso_reciente);
     new_page->next = table[index];
     table[index] = new_page;

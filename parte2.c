@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(argv[i], "-f") == 0) {
             archivo_referencias = argv[i + 1];
         } else {
-            fprintf(stderr, "Parámetro desconocido: %s\n", argv[i]);
+            fprintf(stderr, "Parametro desconocido: %s\n", argv[i]);
             return EXIT_FAILURE;
         }
     }
@@ -54,22 +54,32 @@ int main(int argc, char* argv[]) {
     leer_referencias(archivo_referencias, &referencias, &num_referencias);
 
     Page* table[SIZE] = { NULL };
+    for (int i = 0; i < num_referencias; i++) {
+        int marco_azar = rand() % 999; // Generar un número de marco al azar
+        //se cargan las paginas en la tabla hash (supuesto de que estan en memoria, es decir, existen)
+        insertar_pagina(table, referencias[i], marco_azar, 1, 0, 0);
+    }
     int fallos_pagina = 0;
 
     if (strcmp(algoritmo, "OPTIMO") == 0) {
+        printf("Algoritmo OPTIMO\n");
         fallos_pagina = reemplazo_optimo(table, num_marcos, referencias, num_referencias);
     } else if (strcmp(algoritmo, "FIFO") == 0) {
+        printf("Algoritmo FIFO\n");
         fallos_pagina = reemplazo_fifo(table, num_marcos, referencias, num_referencias);
     } else if (strcmp(algoritmo, "LRU") == 0) {
+        printf("Algoritmo LRU\n");
         fallos_pagina = reemplazo_lru(table, num_marcos, referencias, num_referencias);
-    } else if (strcmp(algoritmo, "LRU_RELOJ") == 0) {
+    } else if (strcmp(algoritmo, "LRU_R") == 0) {
+        printf("Algoritmo LRU_RELOJ\n");
         fallos_pagina = reemplazo_lru_reloj(table, num_marcos, referencias, num_referencias);
     } else {
         fprintf(stderr, "Algoritmo desconocido: %s\n", algoritmo);
+        fprintf(stderr, "Algoritmos validos: OPTIMO, FIFO, LRU, LRU_R\n LRU_R: LRU con Reloj\n");
         return EXIT_FAILURE;
     }
 
-    printf("Número de fallos de página: %d\n", fallos_pagina);
+    printf("Numero de fallos de pagina: %d\n", fallos_pagina);
 
     free(referencias);
     free_table(table, SIZE);
